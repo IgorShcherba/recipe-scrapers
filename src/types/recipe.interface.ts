@@ -6,6 +6,7 @@ import type {
   InstructionItemSchema,
   LinkSchema,
   ParsedIngredientSchema,
+  RecipeObjectSchema,
 } from '@/schemas/recipe.schema'
 
 export type List = Set<string>
@@ -44,6 +45,11 @@ export type InstructionGroup = z.infer<typeof InstructionGroupSchema>
  * All recipe instructions as an array of groups
  */
 export type Instructions = InstructionGroup[]
+
+/**
+ * The complete recipe object
+ */
+export type RecipeObject = z.infer<typeof RecipeObjectSchema>
 
 /**
  * A link with href and display text
@@ -102,8 +108,9 @@ export interface RecipeData {
   /**
    * An list of all links found in the page HTML defined within an anchor
    * `<a>` element.
+   * Only present when `linksEnabled` option is set to `true`.
    */
-  links: Link[]
+  links?: Link[]
   /**
    * A description of the recipe. This is normally a sentence or short
    * paragraph describing the recipe. Often the website defines the
@@ -272,28 +279,5 @@ export type OptionalRecipeFields = Pick<
   | 'nutrients'
   | 'dietaryRestrictions'
   | 'keywords'
+  | 'links'
 >
-
-/**
- * The validated recipe object output from the schema.
- * This represents a recipe that has passed all validation rules.
- */
-export interface RecipeObject
-  extends Omit<
-    RecipeData,
-    | 'category'
-    | 'cuisine'
-    | 'dietaryRestrictions'
-    | 'equipment'
-    | 'keywords'
-    | 'nutrients'
-    | 'reviews'
-  > {
-  category: string[]
-  cuisine: string[]
-  dietaryRestrictions: string[]
-  equipment: string[]
-  keywords: string[]
-  nutrients: Record<string, string>
-  reviews: Record<string, string>
-}

@@ -75,7 +75,7 @@ function runTestSuite(host: string, htmlFiles: string[], jsonFiles: string[]) {
           const scraper = new Scraper(htmlContent, host, {
             logLevel: LogLevel.WARN,
           })
-          const data: RecipeObject = await scraper.toRecipeObject()
+          const data = await scraper.toRecipeObject()
           expect(data).toEqual(expectedData)
 
           const parsedResult = await scraper.safeParse()

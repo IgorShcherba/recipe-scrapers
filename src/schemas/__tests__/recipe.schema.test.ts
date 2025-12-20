@@ -8,6 +8,7 @@ import {
   InstructionItemSchema,
   InstructionsSchema,
   LinkSchema,
+  RECIPE_SCHEMA_VERSION,
   RecipeObjectSchema,
 } from '../recipe.schema'
 
@@ -284,7 +285,6 @@ describe('RecipeObjectSchema', () => {
     keywords: ['cookies', 'dessert'],
     dietaryRestrictions: [],
     equipment: ['Mixing bowl', 'Oven'],
-    links: [{ href: 'https://example.com/tips', text: 'Baking Tips' }],
     nutrients: { calories: '200 kcal' },
     reviews: {},
   }
@@ -294,6 +294,29 @@ describe('RecipeObjectSchema', () => {
     expect(result.title).toBe('Chocolate Chip Cookies')
     expect(result.author).toBe('John Doe')
     expect(result.totalTime).toBe(45)
+    expect(result.schemaVersion).toBe(RECIPE_SCHEMA_VERSION)
+  })
+
+  it('should add default schemaVersion', () => {
+    const result = RecipeObjectSchema.parse(validRecipe)
+    expect(result.schemaVersion).toBe('1.0.0')
+  })
+
+  it('should allow omitting links field', () => {
+    const recipeWithoutLinks = { ...validRecipe }
+    const result = RecipeObjectSchema.parse(recipeWithoutLinks)
+    expect(result.links).toBeUndefined()
+  })
+
+  it('should accept links when provided', () => {
+    const recipeWithLinks = {
+      ...validRecipe,
+      links: [{ href: 'https://example.com/tips', text: 'Baking Tips' }],
+    }
+    const result = RecipeObjectSchema.parse(recipeWithLinks)
+    expect(result.links).toEqual([
+      { href: 'https://example.com/tips', text: 'Baking Tips' },
+    ])
   })
 
   it('should trim whitespace from title', () => {
@@ -405,7 +428,6 @@ describe('RecipeObjectSchema', () => {
       prepTime: null,
       siteName: null,
       cookingMethod: null,
-      links: [],
       nutrients: {},
       reviews: {},
     }
@@ -417,6 +439,7 @@ describe('RecipeObjectSchema', () => {
     expect(result.equipment).toEqual([])
     expect(result.ratings).toBe(0)
     expect(result.ratingsCount).toBe(0)
+    expect(result.schemaVersion).toBe(RECIPE_SCHEMA_VERSION)
   })
 
   it('should reject when totalTime is less than cookTime + prepTime', () => {
@@ -551,7 +574,6 @@ describe('Schema type inference', () => {
       keywords: [],
       dietaryRestrictions: [],
       equipment: [],
-      links: [],
       nutrients: {},
       reviews: {},
       ratings: 0,

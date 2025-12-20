@@ -8,6 +8,15 @@ import {
 } from './common.schema'
 
 /**
+ * Current schema version for recipe objects.
+ * Increment this when making breaking changes to the schema.
+ *
+ * Version history:
+ * - 1.0.0: Initial schema version
+ */
+export const RECIPE_SCHEMA_VERSION = '1.0.0' as const
+
+/**
  * Schema for a parsed ingredient from the parse-ingredient library.
  * This represents the structured data extracted from an ingredient string.
  * @see https://github.com/jakeboone02/parse-ingredient
@@ -88,10 +97,28 @@ export const LinkSchema = z.object({
 })
 
 /**
- * Base RecipeObject schema without cross-field validations
- * Used as the foundation for both strict and lenient schemas
+ * Base RecipeObject schema without cross-field validations.
+ * Use this schema when you need to extend the recipe object with custom fields.
+ *
+ * @example
+ * ```ts
+ * import { RecipeObjectBaseSchema, applyRecipeValidations } from 'recipe-scrapers-js'
+ *
+ * const MyCustomRecipeSchema = RecipeObjectBaseSchema.extend({
+ *   customField: z.string(),
+ * })
+ *
+ * // Apply the standard recipe validations
+ * const MyValidatedRecipeSchema = applyRecipeValidations(MyCustomRecipeSchema)
+ * ```
  */
 export const RecipeObjectBaseSchema = z.object({
+  // Schema version for migrations
+  schemaVersion: z
+    .literal(RECIPE_SCHEMA_VERSION)
+    .default(RECIPE_SCHEMA_VERSION)
+    .describe('Schema version for recipe data migrations'),
+
   // Required fields
   host: z.hostname('Host must be a valid hostname'),
 
@@ -157,7 +184,7 @@ export const RecipeObjectBaseSchema = z.object({
     .array(zString('Equipment item'), 'Equipment must be an array')
     .default([]),
 
-  links: z.array(LinkSchema, 'Links must be an array').default([]),
+  links: z.array(LinkSchema, 'Links must be an array').optional(),
 
   // Complex fields
   nutrients: z
@@ -170,34 +197,62 @@ export const RecipeObjectBaseSchema = z.object({
 })
 
 /**
- * Strict RecipeObject schema with all validations enforced
+ * Applies recipe-specific transformations and validations to a schema.
+ * Use this when extending RecipeObjectBaseSchema with custom fields.
+ *
+ * @param schema - A Zod object schema that includes
+ * all RecipeObjectBaseSchema fields
+ * @returns A schema with transforms and field validations applied
+ *
+ * @example
+ * ```ts
+ * const CustomSchema = RecipeObjectBaseSchema.extend({
+ *   tags: z.array(z.string()),
+ * })
+ *
+ * const ValidatedCustomSchema = applyRecipeValidations(CustomSchema)
+ * ```
  */
-export const RecipeObjectSchema = RecipeObjectBaseSchema.transform((data) => {
-  // Auto-fix: calculate totalTime if missing but cook and prep times exist
-  if (!data.totalTime && !isNull(data.cookTime) && !isNull(data.prepTime)) {
-    data.totalTime = data.cookTime + data.prepTime
-  }
-
-  return data
-})
-  // Cross-field validations
-  .refine(
-    (data) => {
-      const { totalTime, cookTime, prepTime } = data
-      if (!isNull(totalTime) && !isNull(cookTime) && !isNull(prepTime)) {
-        return totalTime >= cookTime + prepTime
+export function applyRecipeValidations<
+  T extends z.infer<typeof RecipeObjectBaseSchema>,
+>(schema: z.ZodType<T>) {
+  return schema
+    .transform((data) => {
+      // Auto-fix: calculate totalTime if missing but cook and prep times exist
+      if (!data.totalTime && !isNull(data.cookTime) && !isNull(data.prepTime)) {
+        data.totalTime = data.cookTime + data.prepTime
       }
-      return true
-    },
-    {
-      message:
-        'Total time should be at least the sum of cook time and prep time',
-      path: ['totalTime'],
-    },
-  )
-  .refine((data) => data.ratings === 0 || data.ratingsCount > 0, {
-    message: 'Ratings count should be greater than 0 when ratings exist',
-    path: ['ratingsCount'],
-  })
+      return data
+    })
+    .refine(
+      ({ totalTime, cookTime, prepTime }) => {
+        if (!isNull(totalTime) && !isNull(cookTime) && !isNull(prepTime)) {
+          return totalTime >= cookTime + prepTime
+        }
+        return true
+      },
+      {
+        message:
+          'Total time should be at least the sum of cook time and prep time',
+        path: ['totalTime'],
+      },
+    )
+    .refine(
+      (data) => {
+        return data.ratings === 0 || data.ratingsCount > 0
+      },
+      {
+        message: 'Ratings count should be greater than 0 when ratings exist',
+        path: ['ratingsCount'],
+      },
+    )
+}
 
-export type RecipeObjectValidated = z.infer<typeof RecipeObjectSchema>
+/**
+ * Strict RecipeObject schema with all validations enforced.
+ * This is the standard schema used by recipe scrapers.
+ *
+ * For custom extensions, use RecipeObjectBaseSchema.extend() and then
+ * apply validations with applyRecipeValidations().
+ */
+export const RecipeObjectSchema = applyRecipeValidations(RecipeObjectBaseSchema)
