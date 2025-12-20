@@ -9,13 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Plugin-based architecture with extractor and post-processor plugins
-- Schema.org (JSON-LD) extractor for automatic recipe data extraction
-- OpenGraph extractor for fallback metadata
-- HTML stripper post-processor
-- Recipe schema validation using Zod
-- Ingredient groups and instruction groups support
-- Extensible plugin system for custom extractors and processors
+- Optional ingredient parsing via [parse-ingredient](https://github.com/jakeboone02/parse-ingredient)
+- `parse()` and `safeParse()` methods for Zod schema validated recipe extraction
+
+### Changed
+
+- **BREAKING**: Renamed `toObject()` method to `toRecipeObject()` for clarity
+- **BREAKING**: Ingredients and instructions now require grouped structures (each group has `name` and `items`) instead of flat arrays
 
 ---
 
