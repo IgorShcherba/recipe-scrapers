@@ -82,6 +82,15 @@ interface ScraperOptions {
    * @default LogLevel.WARN
    */
   logLevel?: LogLevel
+  /**
+   * Enable ingredient parsing using the parse-ingredient library.
+   * When enabled, each ingredient item will include a `parsed` field
+   * containing structured data (quantity, unit, description, etc.).
+   * Can be `true` for defaults or an options object.
+   * @see https://github.com/jakeboone02/parse-ingredient
+   * @default false
+   */
+  parseIngredients?: boolean | ParseIngredientOptions
 }
 ```
 

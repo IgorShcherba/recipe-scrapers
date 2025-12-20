@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio'
+import type { ParseIngredientOptions } from 'parse-ingredient'
 import type z from 'zod'
 import type { RecipeObjectValidated } from '@/schemas/recipe.schema'
 import { RecipeObjectSchema } from '@/schemas/recipe.schema'
@@ -8,6 +9,7 @@ import { NotImplementedException } from './exceptions'
 import { Logger, LogLevel } from './logger'
 import { PluginManager } from './plugin-manager'
 import { HtmlStripperPlugin } from './plugins/html-stripper.processor'
+import { IngredientParserPlugin } from './plugins/ingredient-parser.processor'
 import { OpenGraphPlugin } from './plugins/opengraph.extractor'
 import { SchemaOrgPlugin } from './plugins/schema-org.extractor'
 import { RecipeExtractor } from './recipe-extractor'
@@ -17,6 +19,7 @@ import type {
   RecipeObject,
 } from './types/recipe.interface'
 import type { ScraperOptions } from './types/scraper.interface'
+import { isPlainObject } from './utils'
 
 export abstract class AbstractScraper {
   protected readonly logger: Logger
@@ -35,6 +38,7 @@ export abstract class AbstractScraper {
       extraExtractors = [],
       extraPostProcessors = [],
       logLevel = LogLevel.WARN,
+      parseIngredients = false,
     } = options
 
     this.logger = new Logger(this.constructor.name, logLevel)
@@ -44,7 +48,18 @@ export abstract class AbstractScraper {
       new OpenGraphPlugin(this.$),
       new SchemaOrgPlugin(this.$, logLevel),
     ]
+
     const basePostProcessors: PostProcessorPlugin[] = [new HtmlStripperPlugin()]
+
+    // Add ingredient parser if enabled
+    if (parseIngredients) {
+      const parserOptions: ParseIngredientOptions = isPlainObject(
+        parseIngredients,
+      )
+        ? parseIngredients
+        : {}
+      basePostProcessors.push(new IngredientParserPlugin(parserOptions))
+    }
 
     this.pluginManager = new PluginManager(
       baseExtractors,

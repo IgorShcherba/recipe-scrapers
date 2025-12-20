@@ -8,10 +8,36 @@ import {
 } from './common.schema'
 
 /**
+ * Schema for a parsed ingredient from the parse-ingredient library.
+ * This represents the structured data extracted from an ingredient string.
+ * @see https://github.com/jakeboone02/parse-ingredient
+ */
+export const ParsedIngredientSchema = z.object({
+  /** The primary quantity (the lower quantity in a range, if applicable) */
+  quantity: z.number().nullable(),
+  /** The secondary quantity (the upper quantity in a range, or null if not
+   * applicable) */
+  quantity2: z.number().nullable(),
+  /** The unit of measure identifier (normalized key) */
+  unitOfMeasureID: z.string().nullable(),
+  /** The unit of measure as written in the ingredient string */
+  unitOfMeasure: z.string().nullable(),
+  /** The ingredient description (name of the ingredient) */
+  description: z.string(),
+  /** Whether the "ingredient" is actually a group header, e.g. "For icing:" */
+  isGroupHeader: z.boolean(),
+})
+
+/**
  * Schema for a single ingredient item
  */
 export const IngredientItemSchema = z.object({
   value: zString('Ingredient value'),
+  /**
+   * Parsed ingredient data from the parse-ingredient library.
+   * Only present when parsing is enabled via `parseIngredients` option.
+   */
+  parsed: ParsedIngredientSchema.optional(),
 })
 
 /**

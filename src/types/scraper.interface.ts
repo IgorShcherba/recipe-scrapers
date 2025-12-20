@@ -1,3 +1,4 @@
+import type { ParseIngredientOptions } from 'parse-ingredient'
 import type { ExtractorPlugin } from '@/abstract-extractor-plugin'
 import type { PostProcessorPlugin } from '@/abstract-postprocessor-plugin'
 import type { LogLevel } from '@/logger'
@@ -31,4 +32,24 @@ export interface ScraperOptions {
    * @default LogLevel.Warn
    */
   logLevel?: LogLevel
+  /**
+   * Enable ingredient parsing using the parse-ingredient library.
+   * When enabled, each ingredient item will include a `parsed` field
+   * containing structured data (quantity, unit, description, etc.).
+   *
+   * Can be set to `true` to enable with default options, or pass
+   * an options object to customize parsing behavior.
+   *
+   * @see https://github.com/jakeboone02/parse-ingredient
+   * @default false
+   *
+   * @example
+   * // Enable with defaults
+   * { parseIngredients: true }
+   *
+   * @example
+   * // Enable with custom options
+   * { parseIngredients: { normalizeUOM: true } }
+   */
+  parseIngredients?: boolean | ParseIngredientOptions
 }

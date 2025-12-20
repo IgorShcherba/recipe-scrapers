@@ -1,6 +1,7 @@
 import { scrapers } from './scrapers/_index'
 import { getHostName } from './utils'
 
+export * from '@/schemas/recipe.schema'
 export * from '@/types/recipe.interface'
 export * from '@/types/scraper.interface'
 export * from './abstract-extractor-plugin'

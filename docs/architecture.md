@@ -42,8 +42,8 @@ Site-Specific Scraper (optional)
 ┌─────────────────────────┐
 │  PostProcessor Plugins  │
 ├─────────────────────────┤
-│  • HTML Stripper        │ ← Remove HTML tags
-│  • [Future processors]  │
+│  • HTML Stripper (100)  │ ← Remove HTML tags
+│  • Ingredient Parser*   │ ← Parse ingredients (optional)
 └─────────────────────────┘
     ↓
 ┌─────────────────────────┐
@@ -101,7 +101,8 @@ abstract class AbstractPostprocessorPlugin {
 
 **Built-in Processors**:
 
-- **HtmlStripperPlugin**: Removes HTML tags from text fields
+- **HtmlStripperPlugin** (priority 100): Removes HTML tags from text fields
+- **IngredientParserPlugin** (priority 50): Parses ingredient strings into structured data (optional, enabled via `parseIngredients` option)
 
 ### Plugin Registration
 

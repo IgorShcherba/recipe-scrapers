@@ -5,9 +5,15 @@ import type {
   InstructionGroupSchema,
   InstructionItemSchema,
   LinkSchema,
+  ParsedIngredientSchema,
 } from '@/schemas/recipe.schema'
 
 export type List = Set<string>
+
+/**
+ * Parsed ingredient data from the parse-ingredient library
+ */
+export type ParsedIngredient = z.infer<typeof ParsedIngredientSchema>
 
 /**
  * A single ingredient item

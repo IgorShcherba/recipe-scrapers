@@ -11,8 +11,18 @@ The ingredients extraction system is designed to extract and structure recipe in
 ### Core Types
 
 ```typescript
+type ParsedIngredient = {
+  quantity: number | null         // Primary quantity (e.g., 2)
+  quantity2: number | null        // Secondary quantity for ranges (e.g., 1-2 cups)
+  unitOfMeasureID: string | null  // Normalized unit key (e.g., "cup")
+  unitOfMeasure: string | null    // Unit as written (e.g., "cups")
+  description: string             // Ingredient name (e.g., "flour")
+  isGroupHeader: boolean          // True if this is a section header
+}
+
 type IngredientItem = {
-  value: string  // The ingredient text, e.g., "1 1/2 cups flour"
+  value: string              // The ingredient text, e.g., "1 1/2 cups flour"
+  parsed?: ParsedIngredient  // Structured data (optional, via parseIngredients option)
 }
 
 type IngredientGroup = {
@@ -51,8 +61,11 @@ The `RecipeExtractor` runs multiple extraction plugins in priority order:
 2. OpenGraph Plugin (priority: 50)
    └─> Fallback for basic metadata
 
-3. PostProcessor Plugins
-   └─> HtmlStripperPlugin: Removes HTML tags from text values
+3. PostProcessor Plugins (in priority order)
+   ├─> HtmlStripperPlugin (100): Removes HTML tags from text values
+   └─> IngredientParserPlugin (50): Parses ingredients into structured data*
+
+*Only active when `parseIngredients` option is enabled
 ```
 
 **Key Insight**: Schema.org JSON-LD provides **clean, well-formatted text**:
@@ -264,6 +277,62 @@ return stringsToIngredients(values)  // Just return prevValue!
 
 If Verify test passes with both HTML and JSON-LD extraction
 
+## Ingredient Parsing
+
+### Parsing Overview
+
+The library supports optional structured parsing of ingredient strings using the [parse-ingredient](https://github.com/jakeboone02/parse-ingredient) library. When enabled via the `parseIngredients` option, each ingredient item includes a `parsed` field with extracted data.
+
+### Enabling Parsing
+
+```typescript
+// Enable with defaults
+const scraper = new MyScraper(html, url, { parseIngredients: true })
+
+// Enable with options
+const scraper = new MyScraper(html, url, {
+  parseIngredients: {
+    normalizeUOM: true,      // "tbsp" → "tablespoon"
+    ignoreUOMs: ['small'],   // Treat as description, not unit
+  }
+})
+```
+
+### Parsing Pipeline
+
+The `IngredientParserPlugin` runs as a PostProcessor (priority 50), after HTML stripping:
+
+```txt
+1. HtmlStripperPlugin (100)
+   └─> "2 cups <b>flour</b>" → "2 cups flour"
+
+2. IngredientParserPlugin (50)
+   └─> "2 cups flour" → { value: "2 cups flour", parsed: {...} }
+```
+
+### Parsed Data Structure
+
+```typescript
+{
+  value: "1-2 tablespoons olive oil",
+  parsed: {
+    quantity: 1,                    // Primary quantity
+    quantity2: 2,                   // Secondary (range) quantity
+    unitOfMeasure: "tablespoons",   // As written
+    unitOfMeasureID: "tablespoon",  // Normalized key
+    description: "olive oil",       // Ingredient name
+    isGroupHeader: false            // True for "For the sauce:" etc.
+  }
+}
+```
+
+### Use Cases
+
+- **Scaling recipes**: Multiply quantities by a factor
+- **Shopping lists**: Aggregate same ingredients across recipes
+- **Nutritional lookup**: Search by normalized ingredient name
+- **Unit conversion**: Convert between measurement systems
+
 ## Future Considerations
 
 ### Potential Improvements
@@ -276,11 +345,9 @@ If Verify test passes with both HTML and JSON-LD extraction
 
 4. **Schema.org Validation**: Detect and handle malformed JSON-LD more robustly
 
-5 **Ingredient Parsing**: Breaking "1 cup flour" into quantity/unit/ingredient
-
 ### Non-Goals
 
-- **Unit Conversion**: Converting between measurement systems
+- **Unit Conversion**: Converting between measurement systems (use parsed data with external tools)
 - **Substitutions**: Handling ingredient alternatives or substitutions
 - **Nutritional Analysis**: Calculating nutrition facts from ingredients
 
@@ -290,6 +357,7 @@ The ingredients system balances **text quality** (from JSON-LD) with **structura
 
 1. **Schema.org Plugin** extracts clean text → `Ingredients` with default grouping
 2. **Scrapers** flatten text → parse HTML structure → rebuild groups with clean text
-3. **Result**: Accurate grouping with high-quality, normalized ingredient text
+3. **IngredientParserPlugin** (optional) → adds structured `parsed` data
+4. **Result**: Accurate grouping with high-quality, normalized ingredient text and optional structured data
 
 This architecture leverages the strengths of both JSON-LD (clean data) and HTML (visual structure) to produce the best possible output.
