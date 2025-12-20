@@ -2,6 +2,10 @@ import { AbstractScraper } from '@/abstract-scraper'
 import { NoIngredientsFoundException } from '@/exceptions'
 import type { RecipeFields } from '@/types/recipe.interface'
 import { flattenIngredients, groupIngredients } from '@/utils/ingredients'
+import {
+  createInstructionGroup,
+  createInstructionItem,
+} from '@/utils/instructions'
 import { normalizeString } from '@/utils/parsing'
 
 /**
@@ -62,7 +66,7 @@ export class SimplyRecipes extends AbstractScraper {
     const items = this.$('div.structured-project__steps ol li').toArray()
 
     if (items.length === 0) {
-      return new Set()
+      return []
     }
 
     const steps = items
@@ -73,7 +77,8 @@ export class SimplyRecipes extends AbstractScraper {
         return normalizeString($clone.text())
       })
       .filter((text) => text.length > 0)
+      .map(createInstructionItem)
 
-    return new Set(steps)
+    return [createInstructionGroup(null, steps)]
   }
 }

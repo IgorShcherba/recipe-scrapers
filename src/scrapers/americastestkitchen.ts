@@ -7,6 +7,10 @@ import {
   flattenIngredients,
   groupIngredients,
 } from '@/utils/ingredients'
+import {
+  createInstructionGroup,
+  createInstructionItem,
+} from '@/utils/instructions'
 import { normalizeString } from '@/utils/parsing'
 
 const recipeIngredientItemSchema = z.object({
@@ -132,19 +136,17 @@ export class AmericasTestKitchen extends AbstractScraper {
 
     const { headnote } = data
 
-    let headnoteText = ''
+    const items: string[] = []
 
     if (headnote) {
-      headnoteText = `Note: ${normalizeString(headnote)}`
+      items.push(`Note: ${normalizeString(headnote)}`)
     }
-
-    const instructionTexts: string[] = []
 
     for (const instruction of data.instructions) {
-      instructionTexts.push(normalizeString(instruction.fields.content))
+      items.push(normalizeString(instruction.fields.content))
     }
 
-    return new Set([headnoteText, ...instructionTexts])
+    return [createInstructionGroup(null, items.map(createInstructionItem))]
   }
 
   private parseHtmlIngredients(

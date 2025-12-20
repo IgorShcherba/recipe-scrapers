@@ -9,7 +9,11 @@ import { Logger, type LogLevel } from '@/logger'
 import type { RecipeFields } from '@/types/recipe.interface'
 import { isFunction, isNumber, isPlainObject, isString } from '@/utils'
 import { stringsToIngredients } from '@/utils/ingredients'
-import { splitInstructions } from '@/utils/instructions'
+import {
+  createInstructionGroup,
+  createInstructionItem,
+  splitInstructions,
+} from '@/utils/instructions'
 import { extractRecipeMicrodata } from '@/utils/microdata'
 import { parseYields } from '@/utils/parse-yields'
 import { normalizeString, parseMinutes, splitToList } from '@/utils/parsing'
@@ -292,43 +296,72 @@ export class SchemaOrgPlugin extends ExtractorPlugin {
 
   private parseInstructions(value: unknown): RecipeFields['instructions'] {
     if (isString(value)) {
-      return new Set(splitInstructions(value))
+      const steps = splitInstructions(value)
+      return [createInstructionGroup(null, steps.map(createInstructionItem))]
     }
 
     const instructions: unknown[] = Array.isArray(value)
       ? value.flat()
       : [value].flat()
 
-    const result: string[] = []
+    const groups: RecipeFields['instructions'] = []
+
+    let currentGroup: { name: string | null; items: string[] } = {
+      name: null,
+      items: [],
+    }
 
     for (const item of instructions) {
       const name = this.getSchemaTextValue(item, ['name'])
       const text = this.getSchemaTextValue(item, ['text'])
 
       if (isString(item)) {
-        result.push(normalizeString(item))
+        currentGroup.items.push(normalizeString(item))
       } else if (isHowToStep(item)) {
         if (name && text && !text.startsWith(name.replace(/\.$/, ''))) {
-          result.push(name)
+          currentGroup.items.push(name)
         }
 
         if (text) {
-          result.push(text)
+          currentGroup.items.push(text)
         }
       } else if (isHowToSection(item)) {
-        if (name) {
-          result.push(name)
+        // Save current group if it has items
+        if (currentGroup.items.length > 0) {
+          groups.push(
+            createInstructionGroup(
+              currentGroup.name,
+              currentGroup.items.filter(Boolean).map(createInstructionItem),
+            ),
+          )
         }
 
+        // Start new group with section name
+        currentGroup = { name: name || null, items: [] }
+
         if (item.itemListElement) {
-          result.push(...this.parseInstructions(item.itemListElement))
+          const nestedResult = this.parseInstructions(item.itemListElement)
+          // Merge nested items into current group
+          for (const nestedGroup of nestedResult) {
+            currentGroup.items.push(...nestedGroup.items.map((i) => i.value))
+          }
         }
       } else if (text) {
-        result.push(text)
+        currentGroup.items.push(text)
       }
     }
 
-    return new Set(result.filter(Boolean))
+    // Add final group if it has items
+    if (currentGroup.items.length > 0) {
+      groups.push(
+        createInstructionGroup(
+          currentGroup.name,
+          currentGroup.items.filter(Boolean).map(createInstructionItem),
+        ),
+      )
+    }
+
+    return groups
   }
 
   /*****************************************************************************
@@ -449,7 +482,7 @@ export class SchemaOrgPlugin extends ExtractorPlugin {
   public instructions(): RecipeFields['instructions'] {
     const instructions = this.parseInstructions(this.recipe.recipeInstructions)
 
-    if (instructions.size === 0) {
+    if (instructions.length === 0) {
       throw new SchemaOrgException('instructions')
     }
 

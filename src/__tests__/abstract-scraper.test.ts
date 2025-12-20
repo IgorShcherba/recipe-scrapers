@@ -4,6 +4,7 @@ import { NotImplementedException } from '@/exceptions'
 import { Logger } from '@/logger'
 import type { RecipeFields } from '@/types/recipe.interface'
 import { stringsToIngredients } from '@/utils/ingredients'
+import { stringsToInstructions } from '@/utils/instructions'
 
 class DummyScraper extends AbstractScraper {
   // implement required static host
@@ -154,7 +155,7 @@ describe('AbstractScraper.toObject', () => {
       dietaryRestrictions: new Set(['veg']),
       equipment: new Set(['pan']),
       ingredients: stringsToIngredients(['ing1', 'ing2']),
-      instructions: new Set(['step1', 'step2']),
+      instructions: stringsToInstructions(['step1', 'step2']),
       keywords: new Set(['kw1']),
       nutrients: new Map([['cal', '200kcal']]),
       reviews: new Map([['rev1', 'Good']]),
@@ -198,7 +199,12 @@ describe('AbstractScraper.toObject', () => {
           items: [{ value: 'ing1' }, { value: 'ing2' }],
         },
       ],
-      instructions: ['step1', 'step2'],
+      instructions: [
+        {
+          name: null,
+          items: [{ value: 'step1' }, { value: 'step2' }],
+        },
+      ],
       keywords: ['kw1'],
       nutrients: { cal: '200kcal' },
       reviews: { rev1: 'Good' },

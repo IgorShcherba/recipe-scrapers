@@ -6,6 +6,7 @@ import {
 } from '@/exceptions'
 import type { RecipeFields } from '@/types/recipe.interface'
 import { isIngredients } from '@/utils/ingredients'
+import { isInstructions } from '@/utils/instructions'
 import { SchemaOrgException, SchemaOrgPlugin } from '../index'
 
 const minimalJsonLd = `
@@ -89,9 +90,10 @@ describe('SchemaOrgPlugin', () => {
       { name: null, items: [{ value: 'a' }, { value: 'b' }] },
     ])
 
-    expect(Array.from(plugin.extract('instructions'))).toEqual([
-      'step1',
-      'step2',
+    const instructions = plugin.extract('instructions')
+    expect(isInstructions(instructions)).toBe(true)
+    expect(instructions).toEqual([
+      { name: null, items: [{ value: 'step1' }, { value: 'step2' }] },
     ])
   })
 

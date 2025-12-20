@@ -5,6 +5,7 @@ import {
   UnsupportedFieldException,
 } from '@/exceptions'
 import { stringsToIngredients } from '@/utils/ingredients'
+import { stringsToInstructions } from '@/utils/instructions'
 import { ExtractorPlugin } from '../abstract-extractor-plugin'
 import type { RecipeFields } from '../types/recipe.interface'
 
@@ -41,7 +42,7 @@ class MockExtractorPlugin extends ExtractorPlugin {
           'ingredient 2',
         ]) as RecipeFields[Key]
       case 'instructions':
-        return new Set(['step 1', 'step 2']) as RecipeFields[Key]
+        return stringsToInstructions(['step 1', 'step 2']) as RecipeFields[Key]
       case 'prepTime':
         return 15 as RecipeFields[Key]
       case 'cookTime':

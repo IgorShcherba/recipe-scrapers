@@ -1,12 +1,9 @@
 import { PostProcessorPlugin } from '@/abstract-postprocessor-plugin'
-import type { List, RecipeFields } from '@/types/recipe.interface'
+import type { RecipeFields } from '@/types/recipe.interface'
 import { isString } from '@/utils'
 import { isIngredients } from '@/utils/ingredients'
-import type { Ingredients } from '../types/recipe.interface'
-
-function isList(value: unknown): value is List {
-  return value instanceof Set && Array.from(value).every(isString)
-}
+import { isInstructions } from '@/utils/instructions'
+import type { Ingredients, Instructions } from '../types/recipe.interface'
 
 export class HtmlStripperPlugin extends PostProcessorPlugin {
   name = 'HtmlStripper'
@@ -32,9 +29,8 @@ export class HtmlStripperPlugin extends PostProcessorPlugin {
       return this.stripHtml(value) as T
     }
 
-    if (field === 'instructions' && isList(value)) {
-      const result = Array.from(value).map(this.stripHtml)
-      return new Set(result) as T
+    if (field === 'instructions' && isInstructions(value)) {
+      return this.processInstructions(value) as T
     }
 
     if (field === 'ingredients' && isIngredients(value)) {
@@ -45,7 +41,6 @@ export class HtmlStripperPlugin extends PostProcessorPlugin {
   }
 
   private processIngredients(ingredients: Ingredients): Ingredients {
-    // Handle the new Ingredients array format
     return ingredients.map((group) => ({
       name: group.name === null ? null : this.stripHtml(group.name),
       items: group.items.map((item) => ({
@@ -54,8 +49,17 @@ export class HtmlStripperPlugin extends PostProcessorPlugin {
     }))
   }
 
+  private processInstructions(instructions: Instructions): Instructions {
+    return instructions.map((group) => ({
+      name: group.name === null ? null : this.stripHtml(group.name),
+      items: group.items.map((item) => ({
+        value: this.stripHtml(item.value),
+      })),
+    }))
+  }
+
   private stripHtml(html: string): string {
-    // Simple regex approach (you could use a proper HTML parser)
+    // Simple regex approach (could use a proper HTML parser)
     return html
       .replace(/<[^>]*>/g, '') // Remove HTML tags
       .replace(/&amp;/g, '&') // Decode common entities

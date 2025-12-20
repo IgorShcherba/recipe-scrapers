@@ -1,5 +1,127 @@
 import { describe, expect, it } from 'bun:test'
-import { splitInstructions } from '../instructions'
+import {
+  createInstructionGroup,
+  createInstructionItem,
+  flattenInstructions,
+  isInstructionGroup,
+  isInstructionItem,
+  isInstructions,
+  splitInstructions,
+  stringsToInstructions,
+} from '../instructions'
+
+describe('createInstructionItem', () => {
+  it('creates an instruction item with value', () => {
+    const item = createInstructionItem('Preheat oven to 350°F')
+    expect(item).toEqual({ value: 'Preheat oven to 350°F' })
+  })
+})
+
+describe('createInstructionGroup', () => {
+  it('creates a group with name and items', () => {
+    const items = [
+      createInstructionItem('Step 1'),
+      createInstructionItem('Step 2'),
+    ]
+    const group = createInstructionGroup('For the sauce', items)
+    expect(group).toEqual({
+      name: 'For the sauce',
+      items: [{ value: 'Step 1' }, { value: 'Step 2' }],
+    })
+  })
+
+  it('creates a group with null name', () => {
+    const items = [createInstructionItem('Mix well')]
+    const group = createInstructionGroup(null, items)
+    expect(group).toEqual({
+      name: null,
+      items: [{ value: 'Mix well' }],
+    })
+  })
+})
+
+describe('isInstructionItem', () => {
+  it('returns true for valid instruction item', () => {
+    expect(isInstructionItem({ value: 'Cook pasta' })).toBe(true)
+  })
+
+  it('returns false for invalid values', () => {
+    expect(isInstructionItem(null)).toBe(false)
+    expect(isInstructionItem(undefined)).toBe(false)
+    expect(isInstructionItem('string')).toBe(false)
+    expect(isInstructionItem({ value: 123 })).toBe(false)
+    expect(isInstructionItem({})).toBe(false)
+  })
+})
+
+describe('isInstructionGroup', () => {
+  it('returns true for valid instruction group', () => {
+    expect(
+      isInstructionGroup({
+        name: 'For the cake',
+        items: [{ value: 'Bake' }],
+      }),
+    ).toBe(true)
+    expect(
+      isInstructionGroup({
+        name: null,
+        items: [{ value: 'Mix' }],
+      }),
+    ).toBe(true)
+  })
+
+  it('returns false for invalid values', () => {
+    expect(isInstructionGroup(null)).toBe(false)
+    expect(isInstructionGroup({ name: 'test' })).toBe(false)
+    expect(isInstructionGroup({ items: [] })).toBe(false)
+  })
+})
+
+describe('isInstructions', () => {
+  it('returns true for valid instructions array', () => {
+    expect(isInstructions([{ name: null, items: [{ value: 'Step 1' }] }])).toBe(
+      true,
+    )
+    expect(isInstructions([])).toBe(true)
+  })
+
+  it('returns false for invalid values', () => {
+    expect(isInstructions(null)).toBe(false)
+    expect(isInstructions('string')).toBe(false)
+    expect(isInstructions([{ invalid: true }])).toBe(false)
+  })
+})
+
+describe('flattenInstructions', () => {
+  it('flattens grouped instructions to array of strings', () => {
+    const instructions = [
+      { name: 'Sauce', items: [{ value: 'Simmer' }, { value: 'Stir' }] },
+      { name: null, items: [{ value: 'Serve' }] },
+    ]
+    expect(flattenInstructions(instructions)).toEqual([
+      'Simmer',
+      'Stir',
+      'Serve',
+    ])
+  })
+
+  it('returns empty array for empty input', () => {
+    expect(flattenInstructions([])).toEqual([])
+  })
+})
+
+describe('stringsToInstructions', () => {
+  it('converts string array to instructions with null group name', () => {
+    const result = stringsToInstructions(['Step 1', 'Step 2'])
+    expect(result).toEqual([
+      { name: null, items: [{ value: 'Step 1' }, { value: 'Step 2' }] },
+    ])
+  })
+
+  it('returns single empty group for empty input', () => {
+    expect(stringsToInstructions([])).toEqual([{ name: null, items: [] }])
+  })
+})
 
 describe('splitInstructions', () => {
   it('removes heading "Preparation" with optional colon', () => {

@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'bun:test'
-import type { Ingredients } from '../../types/recipe.interface'
+import type { Ingredients, Instructions } from '../../types/recipe.interface'
 import {
   createIngredientGroup,
   createIngredientItem,
 } from '../../utils/ingredients'
+import {
+  createInstructionGroup,
+  createInstructionItem,
+} from '../../utils/instructions'
 import { HtmlStripperPlugin } from '../html-stripper.processor'
 
 describe('HtmlStripperPlugin', () => {
@@ -29,10 +33,15 @@ describe('HtmlStripperPlugin', () => {
     )
   })
 
-  it('strips HTML from instructions Set<string>', () => {
-    const input = new Set(['<b>Step 1</b>', 'Step &amp; 2'])
+  it('strips HTML from instructions', () => {
+    const input: Instructions = [
+      createInstructionGroup(null, [
+        createInstructionItem('<b>Step 1</b>'),
+        createInstructionItem('Step &amp; 2'),
+      ]),
+    ]
     const output = plugin.process('instructions', input)
-    expect(Array.from(output)).toEqual(['Step 1', 'Step & 2'])
+    expect(output[0].items.map((i) => i.value)).toEqual(['Step 1', 'Step & 2'])
   })
 
   it('strips HTML from ingredients', () => {
