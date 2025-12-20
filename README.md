@@ -4,18 +4,15 @@
 [![build](https://img.shields.io/github/actions/workflow/status/nerdstep/recipe-scrapers-js/ci.yml?branch=main&style=flat-square)](https://github.com/nerdstep/recipe-scrapers-js/actions)
 [![license](https://img.shields.io/npm/l/recipe-scrapers-js.svg?style=flat-square)](LICENSE)
 
-> **⚠️ Alpha Version**  
-> This library is currently in **alpha**, APIs and behavior may change without notice. Use at your own risk.
-
 A TypeScript/JavaScript library for scraping recipe data from various cooking websites. This is a JavaScript port inspired by the Python [recipe-scrapers](https://github.com/hhursev/recipe-scrapers) library.
 
 ## Features
 
-- 🍳 Extract structured recipe data from cooking websites
-- 🔍 Support for multiple popular recipe sites
-- 🚀 Built with TypeScript for better developer experience
-- ⚡ Fast and lightweight using Bun runtime for development and testing
-- 🧪 Comprehensive test coverage
+- Extract structured recipe data from cooking websites
+- Support for multiple popular recipe sites
+- Built with TypeScript for better developer experience
+- Fast and lightweight using the Bun runtime for development and testing
+- Comprehensive test coverage
 
 ## Installation
 
@@ -45,9 +42,12 @@ const url = 'https://allrecipes.com/recipe/example'
 // This function will throw if a scraper does not exist.
 const MyScraper = getScraper(url)
 const scraper = new MyScraper(html, url, /* { ...options } */)
-const recipe = await scraper.toObject()
 
-console.log(recipe)
+// Get the recipe data
+const rawRecipe = await scraper.toRecipeObject()
+
+// Get the schema validated recipe data
+const validatedRecipe = await scraper.parse()
 ```
 
 ### Options
@@ -79,7 +79,7 @@ interface ScraperOptions {
   /**
    * Logging level for the scraper.
    * This controls the verbosity of logs produced by the scraper.
-   * @default LogLevel.Warn
+   * @default LogLevel.WARN
    */
   logLevel?: LogLevel
 }
@@ -100,7 +100,7 @@ This library supports recipe extraction from various popular cooking websites. T
 ```bash
 # Clone the repository
 git clone https://github.com/nerdstep/recipe-scrapers-js.git
-cd recipe-scrapers
+cd recipe-scrapers-js
 
 # Install dependencies
 bun install
@@ -116,7 +116,7 @@ bun run build
 
 - `bun run build` - Build the library for distribution
 - `bun test` - Run the test suite
-- `bun test:coverage` - Run tests with coverage report
+- `bun test:coverage` - Run tests with a coverage report
 - `bun fetch-test-data` - Fetch test data from the original Python repository
 - `bun lint` - Run linting and type checking
 - `bun lint:fix` - Fix linting issues automatically
@@ -155,11 +155,16 @@ export class NewSiteScraper extends AbstractScraper {
   }
 
   protected extractIngredients(): RecipeFields['ingredients'] {
-    const items = this.$('.ingredient').map((_, el) =>
-      this.$(el).text().trim()
-    ).get()
+    const items = this.$('.ingredient')
+      .map((_, el) => this.$(el).text().trim())
+      .get()
 
-    return new Set(items)
+    return [
+      {
+        name: null,
+        items: items.map((value) => ({ value })),
+      },
+    ]
   }
   
   // ... implement other extraction methods

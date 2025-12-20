@@ -9,6 +9,7 @@ Recipe Scrapers JS is a TypeScript library for extracting structured recipe data
 - **Multi-source extraction**: JSON-LD (Schema.org), Microdata, OpenGraph
 - **Plugin architecture**: Extensible extraction and post-processing pipeline
 - **Site-specific scrapers**: Custom logic for popular recipe sites
+- **Runtime validation**: Zod-based schema validation for data quality
 - **Type-safe**: Full TypeScript support with strict typing
 - **Test coverage**: Comprehensive test suite with real HTML fixtures
 
@@ -16,31 +17,14 @@ Recipe Scrapers JS is a TypeScript library for extracting structured recipe data
 
 ### RecipeObject
 
-The output format representing a complete recipe:
+The output format representing a complete recipe. See `src/types/recipe.interface.ts` for the full interface definition.
 
-```typescript
-interface RecipeObject {
-  name?: string
-  description?: string
-  ingredients?: Ingredients  // See ingredients architecture doc
-  instructions?: Instructions
-  yields?: string
-  prepTime?: string
-  cookTime?: string
-  totalTime?: string
-  image?: string
-  // ... additional fields
-}
-```
-
-All fields are optional to accommodate varying data availability across sites.
-
-### Extraction Pipeline
+### Extraction & Validation Pipeline
 
 ```txt
 HTML Input
     ↓
-RecipeExtractor
+RecipeExtractor / AbstractScraper
     ↓
 ┌─────────────────────────┐
 │  Extractor Plugins      │
@@ -60,6 +44,14 @@ Site-Specific Scraper (optional)
 ├─────────────────────────┤
 │  • HTML Stripper        │ ← Remove HTML tags
 │  • [Future processors]  │
+└─────────────────────────┘
+    ↓
+┌─────────────────────────┐
+│  Validation (Optional)  │
+├─────────────────────────┤
+│  • Zod Schema           │ ← Runtime validation
+│  • Type checking        │
+│  • Auto-fixes           │
 └─────────────────────────┘
     ↓
 Final RecipeObject
@@ -142,7 +134,46 @@ abstract class AbstractScraper {
     [K in keyof RecipeFields]?: (prevValue?: RecipeFields[K]) => RecipeFields[K]
   }
   
-  scrape(): RecipeObject
+  // Extraction methods
+  toRecipeObject(): RecipeObject     // Extract without validation
+  parse(): RecipeObjectValidated     // Extract with validation (throws on error)
+  safeParse(): SafeParseReturnType   // Extract with validation (returns result)
+  
+  // Override for custom validation
+  protected getSchema(): ZodSchema
+}
+```
+
+### Validation Methods
+
+**`toRecipeObject()`** - Extract without validation
+
+```typescript
+const recipe = scraper.toRecipeObject()
+// Returns RecipeObject - no runtime checks
+```
+
+**`parse()`** - Extract with validation (throws ZodError on failure)
+
+```typescript
+try {
+  const recipe = scraper.parse()
+  // Returns RecipeObjectValidated - guaranteed valid
+} catch (error) {
+  if (error instanceof ZodError) {
+    console.error(error.format())
+  }
+}
+```
+
+**`safeParse()`** - Extract with validation (returns result object)
+
+```typescript
+const result = scraper.safeParse()
+if (result.success) {
+  console.log(result.data)  // RecipeObjectValidated
+} else {
+  console.error(result.error.issues)  // Validation errors
 }
 ```
 
@@ -153,7 +184,7 @@ abstract class AbstractScraper {
 3. **Custom extraction**: Scraper's `extractors` override/enhance fields
 4. **Post-processing**: PostProcessor plugins clean up final output
 
-### Example Scraper
+### Example Scraper with Custom Validation
 
 ```typescript
 class NYTimes extends AbstractScraper {
@@ -161,21 +192,12 @@ class NYTimes extends AbstractScraper {
     return 'cooking.nytimes.com'
   }
 
-  extractors = {
-    // Override ingredients extraction
-    ingredients: this.ingredients.bind(this),
-    // Override name extraction
-    name: this.name.bind(this),
-  }
-
-  protected ingredients(prevValue: Ingredients | undefined): Ingredients {
-    // Custom logic using prevValue from plugins
-    // See ingredients architecture doc for details
-  }
-  
-  protected name(prevValue: string | undefined): string {
-    // Custom name extraction
-    return prevValue || this.$('h1.recipe-title').text().trim()
+  // Override schema for site-specific validation
+  protected getSchema() {
+    return RecipeObjectSchema.extend({
+      title: z.string()
+        .refine((v) => v.length >= 10, 'Titles must be descriptive')
+    })
   }
 }
 ```
@@ -234,6 +256,38 @@ console.log(recipe.name)
 console.log(recipe.ingredients)
 ```
 
+## Validation System
+
+The library uses [Zod](https://zod.dev/) for runtime validation.
+
+### Schema Organization
+
+```txt
+src/schemas/
+├── recipe.schema.ts          # Main RecipeObject schema
+└── common.schema.ts          # Reusable helpers (zString, zHttpUrl, etc.)
+```
+
+### Validation Features
+
+- **Auto-fixing**: Calculates missing totalTime from cook + prep times
+- **Cross-field validation**: Ensures time consistency and rating relationships
+- **Custom error messages**: Clear validation feedback
+- **Transform pipeline**: Trims whitespace, normalizes data
+- **Extensible**: Scrapers can override schemas for site-specific rules
+
+### Validation Guarantees
+
+Validated recipes (`RecipeObjectValidated`) are guaranteed to have:
+
+- ✅ Valid URLs for host, canonicalUrl, image
+- ✅ Non-empty title, yields, description, author
+- ✅ At least one ingredient group with items
+- ✅ At least one instruction group with steps
+- ✅ Positive time values (when present)
+- ✅ Valid ratings (0-5) and non-negative rating counts
+- ✅ Consistent totalTime ≥ cookTime + prepTime
+
 ## Project Structure
 
 ```txt
@@ -244,6 +298,9 @@ recipe-scrapers-js/
 │   ├── plugin-manager.ts           # Plugin registration & execution
 │   ├── abstract-scraper.ts         # Base scraper class
 │   ├── abstract-plugin.ts          # Base plugin classes
+│   │
+│   ├── schemas/                    # Zod validation schemas
+│   │   └── recipe.schema.ts       # RecipeObject schema
 │   │
 │   ├── plugins/                    # Generic extraction plugins
 │   │   ├── schema-org.extractor/
@@ -391,23 +448,24 @@ function process(data: unknown) {
 }
 ```
 
-### Type Guards
+### Type Guards vs Zod Validation
 
-Use type predicates for runtime validation:
+**Type Guards** - For compile-time type narrowing:
 
 ```typescript
 export function isIngredientItem(value: unknown): value is IngredientItem {
-  return (
-    isPlainObject(value) &&
-    'value' in value &&
-    isString(value.value)
-  )
+  return isPlainObject(value) && 'value' in value && isString(value.value)
 }
+```
 
-// Usage
-if (isIngredientItem(data)) {
-  // TypeScript knows data is IngredientItem
-  console.log(data.value)
+**Zod Schemas** - For runtime validation with error details:
+
+```typescript
+const result = RecipeObjectSchema.safeParse(data)
+if (result.success) {
+  // data is validated RecipeObjectValidated
+} else {
+  // result.error contains detailed validation errors
 }
 ```
 
@@ -441,9 +499,12 @@ if (isIngredientItem(data)) {
 1. **Research**: Analyze target site's HTML structure
 2. **Check JSON-LD**: Verify if Schema.org data exists and quality
 3. **Create scraper**: Extend `AbstractScraper` in `src/scrapers/`
-4. **Register**: Add to `src/scrapers/_index.ts`
-5. **Add tests**: Create fixtures in `test-data/[domain]/`
-6. **Verify**: Run tests and ensure extraction is accurate
+4. **Override extractors**: Add custom extraction methods
+5. **Custom validation** (optional): Override `getSchema()` for site-specific rules
+6. **Register**: Add to `src/scrapers/_index.ts`
+7. **Add tests**: Create fixtures in `test-data/[domain]/`
+8. **Test validation**: Ensure `parse()` succeeds on test data
+9. **Verify**: Run tests and ensure extraction is accurate
 
 ### Adding a New Plugin
 
@@ -454,13 +515,13 @@ if (isIngredientItem(data)) {
 5. **Test**: Add unit tests for plugin logic
 6. **Document**: Update relevant architecture docs
 
-### Adding a New Utility
+### Adding Schema Validation Rules
 
-1. **Check existing**: Ensure functionality doesn't exist
-2. **Place correctly**: Add to appropriate file in `utils/`
-3. **Add types**: Ensure full TypeScript typing
-4. **Write tests**: Add comprehensive unit tests
-5. **Export**: Add to `utils/index.ts` if public API
+1. **Identify need**: What validation is missing?
+2. **Update schema**: Modify `src/schemas/recipe.schema.ts`
+3. **Add refinements**: Use `.refine()` for cross-field validation
+4. **Add transforms**: Use `.transform()` for auto-fixes
+5. **Test**: Add unit tests for new validation rules
 
 ## Performance Considerations
 
@@ -490,12 +551,14 @@ if (isIngredientItem(data)) {
 2. **Better fuzzy matching**: Improve ingredient text matching
 3. **Ingredient parsing**: Break down quantity/unit/ingredient
 4. **Video extraction**: Support recipe videos
+5. **CLI tool**: Scaffold new scrapers
 
 ### Architecture Improvements
 
 1. **Scraper generator**: CLI tool to scaffold new scrapers
-2. **Validation pipeline**: Schema validation for extracted data
+2. **Schema versioning**: Track validation rule changes
 3. **Streaming API**: Process large HTML documents efficiently
+4. **Performance profiling**: Identify validation bottlenecks
 
 ## Contributing
 
