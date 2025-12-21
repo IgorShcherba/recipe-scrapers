@@ -31,8 +31,8 @@ export const zPositiveInteger = (fieldName: string) =>
     .positive(`${fieldName} must be positive`)
     .nullable()
 
-export const zNonEmptyArray = <T>(
-  schema: z.core.$ZodType<T>,
+export const zNonEmptyArray = <T extends z.ZodType>(
+  schema: T,
   fieldName: string,
 ) =>
   z
