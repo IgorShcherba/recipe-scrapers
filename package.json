@@ -1,6 +1,6 @@
 {
-  "name": "recipe-scrapers-js",
-  "version": "1.0.0",
+  "name": "recipe-scrapers",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "A recipe scrapers library",
   "author": {
@@ -9,7 +9,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nerdstep/recipe-scrapers-js.git"
+    "url": "git+https://github.com/recipe-scrapers/recipe-scrapers.git"
+  },
+  "homepage": "https://github.com/recipe-scrapers/recipe-scrapers#readme",
+  "bugs": {
+    "url": "https://github.com/recipe-scrapers/recipe-scrapers/issues"
   },
   "type": "module",
   "module": "dist/index.mjs",
@@ -26,6 +30,8 @@
     "dist",
     "docs",
     "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "GOVERNANCE.md",
     "LICENSE",
     "README.md"
   ],
