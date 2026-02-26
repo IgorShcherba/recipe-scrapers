@@ -144,6 +144,10 @@ Commits should be:
 - Small and logically scoped
 - Descriptive
 - Easy to reason about
+- Prefixed using Conventional Commits (`feat`, `fix`, `chore`, `docs`, etc.)
+
+Release automation uses commit types to determine SemVer bumps and generate changelog entries.
+Use `!` or a `BREAKING CHANGE:` footer for breaking changes.
 
 Example:
 
