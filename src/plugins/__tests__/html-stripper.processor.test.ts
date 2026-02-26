@@ -85,4 +85,12 @@ describe('HtmlStripperPlugin', () => {
       new Set(['<b>cat</b>']),
     )
   })
+
+  it('decodes all HTML entities', () => {
+    expect(plugin.process('title', 'Cr&egrave;me br&ucirc;l&eacute;e')).toBe(
+      'Crème brûlée',
+    )
+    expect(plugin.process('title', '&#x27;quoted&#x27;')).toBe("'quoted'")
+    expect(plugin.process('title', '100&deg;C')).toBe('100°C')
+  })
 })
