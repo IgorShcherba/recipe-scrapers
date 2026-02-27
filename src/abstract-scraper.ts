@@ -114,6 +114,15 @@ export abstract class AbstractScraper {
     throw new NotImplementedException('host')
   }
 
+  /**
+   * Returns the host value stored in the final recipe data.
+   * Subclasses can override when host must be derived from instance context.
+   */
+  protected getHost(): string {
+    const instance = this.constructor as typeof AbstractScraper
+    return instance.host()
+  }
+
   /*****************************************************************************
    * Default implementations for common fields that can be overridden
    * by subclasses.
@@ -168,8 +177,6 @@ export abstract class AbstractScraper {
    * Scrape's the recipe and caches the data.
    */
   public async scrape(): Promise<RecipeData> {
-    const instance = this.constructor as typeof AbstractScraper
-
     if (this.recipeData) {
       return this.recipeData
     }
@@ -184,7 +191,7 @@ export abstract class AbstractScraper {
       description: await this.extract('description'),
       dietaryRestrictions: await this.extract('dietaryRestrictions'),
       equipment: await this.extract('equipment'),
-      host: instance.host(),
+      host: this.getHost(),
       image: await this.extract('image'),
       ingredients: await this.extract('ingredients'),
       instructions: await this.extract('instructions'),

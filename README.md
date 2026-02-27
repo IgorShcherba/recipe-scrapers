@@ -33,13 +33,13 @@ bun add recipe-scrapers cheerio zod
 ### Basic Usage
 
 ```typescript
-import { getScraper } from 'recipe-scrapers'
+import { getScraper, scrapeRecipe } from 'recipe-scrapers'
 
 const html = `<html>The html to scrape...</html>`
 const url = 'https://allrecipes.com/recipe/example'
 
 // Get a scraper for a specific URL
-// This function will throw if a scraper does not exist.
+// This function throws by default if a scraper does not exist.
 const MyScraper = getScraper(url)
 const scraper = new MyScraper(html, url, /* { ...options } */)
 
@@ -48,6 +48,15 @@ const rawRecipe = await scraper.toRecipeObject()
 
 // Get the schema validated recipe data
 const validatedRecipe = await scraper.parse()
+
+// Enable fallback mode for unsupported hosts
+const FallbackScraper = getScraper(url, { wildMode: true })
+
+// One-shot helper (wild mode is enabled by default)
+const parsed = await scrapeRecipe(html, url)
+
+// One-shot helper with Zod safe parse result
+const safeResult = await scrapeRecipe(html, url, { safeParse: true })
 ```
 
 ### Options
