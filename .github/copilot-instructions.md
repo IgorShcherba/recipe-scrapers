@@ -1,24 +1,35 @@
-# Copilot Instructions for Recipe Scrapers JS
+# Copilot Instructions for Recipe Scrapers
 
 You are helping with a TypeScript project that scrapes recipe data from various cooking websites. The project extracts structured recipe information from HTML pages using multiple extraction methods.
 
 ## Project Structure
 ```
-recipe-scrapers-js/
+recipe-scrapers/
 ├── src/
-|   ├── **/__tests__/    # Test files
-│   ├── extractors/      # Site-specific extractors
+│   ├── __tests__/       # Core test files
+│   ├── exceptions/      # Custom exceptions
 │   ├── plugins/         # Generic extraction plugins (JSON-LD, microdata, etc.)
-|   ├── types/           # TypeScript types    
+│   ├── schemas/         # Zod schemas
+│   ├── scrapers/        # Site-specific scrapers + scraper registry
+│   ├── types/           # TypeScript types
 │   ├── utils/           # Utility functions
-│   └── index.js         # Main entry point
-└── test-data/           # HTML files and expected JSON outputs for testing     
+│   └── index.ts         # Public entry point
+├── test-data/           # HTML fixtures and expected JSON outputs
+└── scripts/             # Test-data fetch/process scripts
 ```
 
 ## Key Technologies
 
 - **Bun** for development and testing
 - **Cheerio** for HTML parsing and DOM manipulation
+
+## Runtime Boundaries (Important)
+
+- **`src/**` (library/runtime code): Keep code runtime-agnostic and portable.
+- In `src/**`, do **not** introduce Bun-only globals/APIs (for example `Bun.file`, `Bun.Glob`, `Bun.serve`).
+- In `src/**`, prefer platform-neutral JavaScript/TypeScript and existing project abstractions.
+- **`src/**/__tests__/**`, `scripts/**`, and test tooling**: Bun-specific APIs are acceptable.
+- If a change touches both `src/**` and tests, keep Bun usage confined to tests/scripts only.
 
 ## TypeScript Rules
 
@@ -37,7 +48,7 @@ recipe-scrapers-js/
 1. **JSON-LD**: Extract from `<script type="application/ld+json">` tags
 2. **Microdata**: Parse HTML microdata attributes (`itemprop`)
 3. **OpenGraph**: Parse OpenGraph meta tags (`og:site_name`)
-3. **Site-specific**: Custom extractors for each cooking website
+4. **Site-specific**: Custom extractors for each cooking website
 
 ### Expected Output Format
 
@@ -50,6 +61,7 @@ Reference `RecipeObject` from `src/types/recipe.interface.ts`
 - Place test files in `__tests__/` directory with `.test.ts` suffix
 - Test data goes in `test-data/[sitename]/` with `.testhtml` and `.json` files
 - Mock external dependencies when needed
+- Bun globals/APIs are allowed in tests and scripts, but should not leak into `src/**`
 
 ## Common Tasks
 
@@ -57,13 +69,14 @@ Reference `RecipeObject` from `src/types/recipe.interface.ts`
 
 1. Create `src/scrapers/[sitename].ts`
 2. Export class extending `AbstractScraper`
-3. Add test data in `test-data/[sitename]/`
+3. Register the scraper in `src/scrapers/_index.ts`
+4. Add test data in `test-data/[sitename]/`
 
 ## Code Style
 
-- Prefer native Bun APIs over Node.js APIs
+- Keep `src/**` runtime-portable; avoid Bun-specific APIs there
 - Use the latest ECMAScript (ESM) features
-- User `import`/`export` instead of `require`
+- Use `import`/`export` instead of `require`
 - Use `const`/`let` instead of `var`
 - Prefer template literals for string interpolation
 - Use destructuring for object/array assignments
