@@ -3,6 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/recipe-scrapers.svg?style=flat-square)](https://www.npmjs.com/package/recipe-scrapers)
 [![build](https://img.shields.io/github/actions/workflow/status/recipe-scrapers/recipe-scrapers/ci.yml?branch=main&style=flat-square)](https://github.com/recipe-scrapers/recipe-scrapers/actions)
 [![license](https://img.shields.io/npm/l/recipe-scrapers.svg?style=flat-square)](LICENSE)
+[![All Contributors](https://img.shields.io/github/all-contributors/recipe-scrapers/recipe-scrapers?color=ee8449&style=flat-square)](#contributors)
 
 A TypeScript library for scraping recipe data from various cooking websites. This is a JavaScript port inspired by the Python [recipe-scrapers](https://github.com/hhursev/recipe-scrapers) library.
 
@@ -247,6 +248,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Zod](https://zod.dev/) for schema validation
 - [Standard Schema](https://github.com/standard-schema/standard-schema) for schema interoperability
 - [parse-ingredient](https://github.com/jakeboone02/parse-ingredient) for ingredient parsing
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
 
 ## Copyright and Usage
 
