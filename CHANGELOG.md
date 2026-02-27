@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD024 -->
+<!-- markdownlint-disable MD024 MD004 -->
 # Changelog
 
 All notable changes to this project will be documented in this file.
@@ -8,11 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.0](https://github.com/recipe-scrapers/recipe-scrapers/compare/1.0.2...1.1.0) (2026-02-27)
 
-
 ### Features
 
 * add food.com scraper ([ec73413](https://github.com/recipe-scrapers/recipe-scrapers/commit/ec73413f2d2e16d48a66491eb18fd736b06538ad))
-
 
 ### Bug Fixes
 
