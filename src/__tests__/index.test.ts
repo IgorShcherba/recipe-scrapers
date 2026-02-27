@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'bun:test'
+import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { getScraper, scrapeRecipe } from '@/index'
+import { RecipeObjectSchema } from '@/schemas/recipe.schema'
 import { Food } from '@/scrapers/food'
 import { GenericScraper } from '@/scrapers/generic'
+import type { RecipeObject } from '@/types/recipe.interface'
 
 const UNSUPPORTED_URL = 'https://unsupported.example/recipes/wild-mode-soup'
 
@@ -110,8 +113,40 @@ describe('scrapeRecipe', () => {
 
     if (!result.success) {
       expect(
-        result.error.issues.some((issue) => issue.path[0] === 'title'),
+        result.error.issues.some((issue) => issue.path?.[0] === 'title'),
       ).toBe(true)
     }
+  })
+
+  it('uses a custom Standard Schema when provided', async () => {
+    const strictTitleSchema: StandardSchemaV1<unknown, RecipeObject> = {
+      '~standard': {
+        version: 1,
+        vendor: 'test-standard-schema',
+        validate(value) {
+          if (
+            typeof value === 'object' &&
+            value !== null &&
+            'title' in value &&
+            value.title === 'Wild Mode Soup'
+          ) {
+            return { value: RecipeObjectSchema.parse(value) }
+          }
+
+          return {
+            issues: [
+              { message: 'Title must match expected value', path: ['title'] },
+            ],
+          }
+        },
+      },
+    }
+
+    const result = await scrapeRecipe(html, UNSUPPORTED_URL, {
+      safeParse: true,
+      schema: strictTitleSchema,
+    })
+
+    expect(result.success).toBe(true)
   })
 })

@@ -9,7 +9,8 @@ from HTML. It combines:
 - optional site-specific scraper overrides, and
 - post-processors for cleanup and enrichment.
 
-The final output is validated with Zod and returned as a `RecipeObject`.
+The final output is validated and returned as a `RecipeObject`.
+By default this uses Zod, but any Standard Schema-compatible schema can be used.
 
 ## Public API
 
@@ -63,7 +64,7 @@ RecipeData (internal)
   ->
 toRecipeObject() converts Set/Map internals to arrays/objects
   ->
-parse() or safeParse() via RecipeObjectSchema
+parse() or safeParse() via validation schema
 ```
 
 Important ordering behavior:
@@ -159,6 +160,7 @@ Validation is built around:
 - `RecipeObjectBaseSchema`
 - `applyRecipeValidations(schema)`
 - `RecipeObjectSchema` (base schema + recipe-level refinements/transforms)
+- Standard Schema-compatible schemas (`schema` option)
 
 Current validation includes:
 
@@ -173,7 +175,7 @@ Current validation includes:
 
 - `toRecipeObject()` (no schema validation)
 - `parse()` (throws on validation failure)
-- `safeParse()` (returns success/error result)
+- `safeParse()` (returns a normalized success/error result)
 
 ## Internal Data Shape Conversion
 

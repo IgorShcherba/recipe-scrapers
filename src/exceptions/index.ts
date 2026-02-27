@@ -1,3 +1,4 @@
+import type { ValidationIssue } from '@/schema-adapter'
 import { isDefined } from '@/utils'
 
 export class ExtractorNotFoundException extends Error {
@@ -36,5 +37,15 @@ export class NoIngredientsFoundException extends ExtractionFailedException {
   constructor() {
     super('ingredients')
     this.name = 'NoIngredientsFoundException'
+  }
+}
+
+export class ValidationException extends Error {
+  constructor(
+    public readonly issues: readonly ValidationIssue[],
+    public readonly validationCause?: unknown,
+  ) {
+    super('Recipe validation failed')
+    this.name = 'ValidationException'
   }
 }

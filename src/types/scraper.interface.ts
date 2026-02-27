@@ -1,7 +1,9 @@
+import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { ParseIngredientOptions } from 'parse-ingredient'
 import type { ExtractorPlugin } from '@/abstract-extractor-plugin'
 import type { PostProcessorPlugin } from '@/abstract-postprocessor-plugin'
 import type { LogLevel } from '@/logger'
+import type { RecipeObject } from './recipe.interface'
 
 export interface ScraperOptions {
   /**
@@ -52,4 +54,9 @@ export interface ScraperOptions {
    * { parseIngredients: { normalizeUOM: true } }
    */
   parseIngredients?: boolean | ParseIngredientOptions
+  /**
+   * Standard Schema-compatible recipe schema.
+   * Use this to validate with libraries such as Zod, Valibot, ArkType, etc.
+   */
+  schema?: StandardSchemaV1<unknown, RecipeObject>
 }

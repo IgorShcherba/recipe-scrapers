@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
+import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { AbstractScraper } from '@/abstract-scraper'
-import { NotImplementedException } from '@/exceptions'
+import { NotImplementedException, ValidationException } from '@/exceptions'
 import { Logger } from '@/logger'
-import type { RecipeFields } from '@/types/recipe.interface'
+import type { RecipeFields, RecipeObject } from '@/types/recipe.interface'
+import type { ScraperOptions } from '@/types/scraper.interface'
 import { stringsToIngredients } from '@/utils/ingredients'
 import { stringsToInstructions } from '@/utils/instructions'
 
@@ -110,9 +112,12 @@ class TestScraper extends AbstractScraper {
   // Provide no real HTML parsing
   extractors = {}
   private data: Partial<Record<keyof RecipeFields, unknown>>
-  constructor(data: Partial<Record<keyof RecipeFields, unknown>>) {
+  constructor(
+    data: Partial<Record<keyof RecipeFields, unknown>>,
+    options: ScraperOptions = {},
+  ) {
     // html, url and options are unused because we override methods
-    super('', '', { linksEnabled: true })
+    super('', '', { linksEnabled: true, ...options })
     this.data = data
   }
 
@@ -234,8 +239,42 @@ describe('AbstractScraper.toRecipeObject', () => {
     expect(result.success).toBe(false)
     if (!result.success) {
       expect(
-        result.error.issues.some((issue) => issue.path[0] === 'image'),
+        result.error.issues.some((issue) => issue.path?.[0] === 'image'),
       ).toBe(true)
+    }
+  })
+
+  it('throws ValidationException from parse() on validation failure', () => {
+    const scraper = new TestScraper({
+      ...createMockValues(),
+      image: 'invalid-url',
+    })
+
+    expect(scraper.parse()).rejects.toThrow(ValidationException)
+  })
+
+  it('uses schema when provided in options', async () => {
+    const schema: StandardSchemaV1<unknown, RecipeObject> = {
+      '~standard': {
+        version: 1,
+        vendor: 'always-fail',
+        validate() {
+          return {
+            issues: [{ message: 'Forced failure', path: ['title'] }],
+          }
+        },
+      },
+    }
+
+    const scraper = new TestScraper(createMockValues(), {
+      schema,
+    })
+
+    const result = await scraper.safeParse()
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe('Forced failure')
     }
   })
 })

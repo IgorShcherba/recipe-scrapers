@@ -1,10 +1,10 @@
+import type { StandardSchemaV1 } from '@standard-schema/spec'
 import * as cheerio from 'cheerio'
 import type { ParseIngredientOptions } from 'parse-ingredient'
-import type z from 'zod'
 import { RecipeObjectSchema } from '@/schemas/recipe.schema'
 import type { ExtractorPlugin } from './abstract-extractor-plugin'
 import type { PostProcessorPlugin } from './abstract-postprocessor-plugin'
-import { NotImplementedException } from './exceptions'
+import { NotImplementedException, ValidationException } from './exceptions'
 import { Logger, LogLevel } from './logger'
 import { PluginManager } from './plugin-manager'
 import { HtmlStripperPlugin } from './plugins/html-stripper.processor'
@@ -12,6 +12,11 @@ import { IngredientParserPlugin } from './plugins/ingredient-parser.processor'
 import { OpenGraphPlugin } from './plugins/opengraph.extractor'
 import { SchemaOrgPlugin } from './plugins/schema-org.extractor'
 import { RecipeExtractor } from './recipe-extractor'
+import {
+  isStandardSchemaV1,
+  type SafeParseResult,
+  safeParseWithStandardSchema,
+} from './schema-adapter'
 import type {
   RecipeData,
   RecipeFields,
@@ -24,6 +29,8 @@ export abstract class AbstractScraper {
   protected readonly logger: Logger
   protected readonly pluginManager: PluginManager
   protected readonly recipeExtractor: RecipeExtractor
+  private validationSchema: StandardSchemaV1<unknown, RecipeObject> | null =
+    null
 
   public readonly $: cheerio.CheerioAPI
   public recipeData: RecipeData | null = null
@@ -241,24 +248,53 @@ export abstract class AbstractScraper {
   }
 
   /**
-   * Get the Zod schema to use for validation.
-   * Subclasses can override to provide custom schemas.
+   * Get the default schema used for validation.
+   * Subclasses can override this method to customize the default schema.
+   * For custom validation schemas, pass `schema` in options.
    */
   protected getSchema() {
     return RecipeObjectSchema
   }
 
   /**
+   * Resolve the Standard Schema used for validation.
+   *
+   * Resolution order:
+   * 1) `options.schema`
+   * 2) default schema from `getSchema()`
+   */
+  protected getValidationSchema(): StandardSchemaV1<unknown, RecipeObject> {
+    if (this.validationSchema) {
+      return this.validationSchema
+    }
+
+    const schema = this.options.schema ?? this.getSchema()
+
+    if (!isStandardSchemaV1<RecipeObject>(schema)) {
+      throw new Error(
+        'Validation schema must be Standard Schema v1 compatible.',
+      )
+    }
+
+    this.validationSchema = schema
+    return this.validationSchema
+  }
+
+  /**
    * Extract and validate recipe data.
-   * Throws ZodError if validation fails.
+   * Throws ValidationException if validation fails.
    *
    * @returns Validated recipe object
-   * @throws {ZodError} If validation fails
+   * @throws {ValidationException} If validation fails
    */
   async parse(): Promise<RecipeObject> {
-    const raw = await this.toRecipeObject()
-    const schema = this.getSchema()
-    return schema.parse(raw)
+    const result = await this.safeParse()
+
+    if (!result.success) {
+      throw new ValidationException(result.error.issues, result.error.cause)
+    }
+
+    return result.data
   }
 
   /**
@@ -267,9 +303,8 @@ export abstract class AbstractScraper {
    *
    * @returns Result object with either data or error
    */
-  async safeParse(): Promise<z.ZodSafeParseResult<RecipeObject>> {
+  async safeParse(): Promise<SafeParseResult<RecipeObject>> {
     const raw = await this.toRecipeObject()
-    const schema = this.getSchema()
-    return schema.safeParse(raw)
+    return safeParseWithStandardSchema(this.getValidationSchema(), raw)
   }
 }

@@ -55,8 +55,26 @@ const FallbackScraper = getScraper(url, { wildMode: true })
 // One-shot helper (wild mode is enabled by default)
 const parsed = await scrapeRecipe(html, url)
 
-// One-shot helper with Zod safe parse result
+// One-shot helper with a safe parse result
 const safeResult = await scrapeRecipe(html, url, { safeParse: true })
+```
+
+### Validation Schema
+
+By default, recipe data is validated with the built-in Zod schema.
+
+You can also validate with any [Standard Schema](https://github.com/standard-schema/standard-schema) compatible schema (for example Valibot).
+
+```typescript
+import { scrapeRecipe } from 'recipe-scrapers'
+
+// Example: a Standard Schema-compatible schema from another library
+import { RecipeSchema as ValibotRecipeSchema } from './valibot-recipe-schema'
+
+const result = await scrapeRecipe(html, url, {
+  safeParse: true,
+  schema: ValibotRecipeSchema,
+})
 ```
 
 ### Options
@@ -100,6 +118,11 @@ interface ScraperOptions {
    * @default false
    */
   parseIngredients?: boolean | ParseIngredientOptions
+  /**
+   * Standard Schema-compatible schema used for validation.
+   * Useful when validating with libraries such as Valibot.
+   */
+  schema?: StandardSchemaV1<unknown, RecipeObject>
 }
 ```
 
@@ -222,6 +245,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Schema.org Recipe specification](https://schema.org/Recipe)
 - [Cheerio](https://cheerio.js.org/) for HTML parsing
 - [Zod](https://zod.dev/) for schema validation
+- [Standard Schema](https://github.com/standard-schema/standard-schema) for schema interoperability
 - [parse-ingredient](https://github.com/jakeboone02/parse-ingredient) for ingredient parsing
 
 ## Copyright and Usage

@@ -3,6 +3,7 @@ import {
   ExtractorNotFoundException,
   NotImplementedException,
   UnsupportedFieldException,
+  ValidationException,
 } from '../index'
 
 describe('ExtractorNotFoundException', () => {
@@ -40,5 +41,21 @@ describe('UnsupportedFieldException', () => {
     expect(error).toBeInstanceOf(UnsupportedFieldException)
     expect(error.message).toBe('Extraction not supported for field: rating')
     expect(error.name).toBe('UnsupportedFieldException')
+  })
+})
+
+describe('ValidationException', () => {
+  it('should create error with issues and name', () => {
+    const error = new ValidationException([
+      { message: 'Invalid title', path: ['title'] },
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error).toBeInstanceOf(ValidationException)
+    expect(error.name).toBe('ValidationException')
+    expect(error.message).toBe('Recipe validation failed')
+    expect(error.issues).toEqual([
+      { message: 'Invalid title', path: ['title'] },
+    ])
   })
 })

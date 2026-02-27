@@ -1,4 +1,4 @@
-import type z from 'zod'
+import type { SafeParseResult } from './schema-adapter'
 import { scrapers } from './scrapers/_index'
 import { GenericScraper } from './scrapers/generic'
 import type { RecipeObject } from './types/recipe.interface'
@@ -11,6 +11,7 @@ export * from '@/types/scraper.interface'
 export * from './abstract-extractor-plugin'
 export * from './abstract-postprocessor-plugin'
 export * from './logger'
+export * from './schema-adapter'
 export { GenericScraper, scrapers }
 
 export interface GetScraperOptions {
@@ -31,7 +32,7 @@ interface BaseScrapeRecipeOptions extends ScraperOptions {
 
 export interface ScrapeRecipeOptions extends BaseScrapeRecipeOptions {
   /**
-   * Return Zod safe-parse result instead of throwing on validation errors.
+   * Return a safe-parse result instead of throwing.
    * @default false
    */
   safeParse?: false
@@ -39,7 +40,7 @@ export interface ScrapeRecipeOptions extends BaseScrapeRecipeOptions {
 
 export interface ScrapeRecipeSafeParseOptions extends BaseScrapeRecipeOptions {
   /**
-   * Return Zod safe-parse result instead of throwing on validation errors.
+   * Return a safe-parse result instead of throwing.
    */
   safeParse: true
 }
@@ -77,7 +78,7 @@ export function scrapeRecipe(
   html: string,
   url: string,
   options: ScrapeRecipeSafeParseOptions,
-): Promise<z.ZodSafeParseResult<RecipeObject>>
+): Promise<SafeParseResult<RecipeObject>>
 export function scrapeRecipe(
   html: string,
   url: string,
@@ -91,7 +92,7 @@ export async function scrapeRecipe(
     wildMode = true,
     ...scraperOptions
   }: ScrapeRecipeOptions | ScrapeRecipeSafeParseOptions = {},
-): Promise<RecipeObject | z.ZodSafeParseResult<RecipeObject>> {
+): Promise<RecipeObject | SafeParseResult<RecipeObject>> {
   const Scraper = getScraper(url, { wildMode })
   const scraper = new Scraper(html, url, scraperOptions)
   return safeParse ? scraper.safeParse() : scraper.parse()
