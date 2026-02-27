@@ -5,6 +5,7 @@
   "packages": {
     ".": {
       "package-name": "recipe-scrapers",
+      "include-component-in-tag": false,
       "changelog-path": "CHANGELOG.md",
       "include-v-in-tag": false
     }
