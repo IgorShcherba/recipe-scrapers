@@ -4,6 +4,4 @@ export class AllRecipes extends AbstractScraper {
   static host() {
     return 'allrecipes.com'
   }
-
-  extractors = {}
 }

@@ -1,4 +1,4 @@
-import { AbstractScraper } from '@/abstract-scraper'
+import { AbstractScraper, type ScraperExtractors } from '@/abstract-scraper'
 import { NoIngredientsFoundException } from '@/exceptions'
 import type { RecipeFields } from '@/types/recipe.interface'
 import { flattenIngredients, groupIngredients } from '@/utils/ingredients'
@@ -26,10 +26,10 @@ export class SimplyRecipes extends AbstractScraper {
     return 'simplyrecipes.com'
   }
 
-  extractors = {
+  protected override readonly extractors = {
     ingredients: this.ingredients.bind(this),
     instructions: this.instructions.bind(this),
-  }
+  } satisfies ScraperExtractors
 
   /**
    * Parse ingredients from HTML using structured ingredients selectors.

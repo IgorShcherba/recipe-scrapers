@@ -25,6 +25,14 @@ import type {
 import type { ScraperOptions } from './types/scraper.interface'
 import { isPlainObject } from './utils'
 
+export type RecipeFieldExtractor<Key extends keyof RecipeFields> = (
+  prevValue: RecipeFields[Key] | undefined,
+) => RecipeFields[Key] | Promise<RecipeFields[Key]>
+
+export type ScraperExtractors = {
+  [Key in keyof RecipeFields]?: RecipeFieldExtractor<Key>
+}
+
 export abstract class AbstractScraper {
   protected readonly logger: Logger
   protected readonly pluginManager: PluginManager
@@ -86,11 +94,7 @@ export abstract class AbstractScraper {
    * Each extractor is a function that takes the previous value
    * returned by the extractor chain (if any) and returns the field value.
    */
-  abstract extractors: {
-    [K in keyof RecipeFields]?: (
-      prevValue: RecipeFields[K] | undefined,
-    ) => RecipeFields[K] | Promise<RecipeFields[K]>
-  }
+  protected readonly extractors: ScraperExtractors = {}
 
   /**
    * Main extraction method - tries site-specific first, then plugins,

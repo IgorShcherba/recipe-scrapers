@@ -1,4 +1,4 @@
-import { AbstractScraper } from '@/abstract-scraper'
+import { AbstractScraper, type ScraperExtractors } from '@/abstract-scraper'
 import type { RecipeFields } from '@/types/recipe.interface'
 
 export class Epicurious extends AbstractScraper {
@@ -6,9 +6,9 @@ export class Epicurious extends AbstractScraper {
     return 'epicurious.com'
   }
 
-  extractors = {
+  protected override readonly extractors = {
     author: this.author.bind(this),
-  }
+  } satisfies ScraperExtractors
 
   protected author(): RecipeFields['author'] {
     const author = this.$('a[itemprop="author"]').text().trim()

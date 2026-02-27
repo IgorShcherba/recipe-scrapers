@@ -4,6 +4,4 @@ export class Food extends AbstractScraper {
   static host() {
     return 'food.com'
   }
-
-  extractors = {}
 }

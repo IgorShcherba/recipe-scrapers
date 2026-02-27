@@ -1,5 +1,5 @@
 import z from 'zod'
-import { AbstractScraper } from '@/abstract-scraper'
+import { AbstractScraper, type ScraperExtractors } from '@/abstract-scraper'
 import type { Ingredients, RecipeFields } from '@/types/recipe.interface'
 import {
   createIngredientGroup,
@@ -78,12 +78,12 @@ export class AmericasTestKitchen extends AbstractScraper {
     return 'americastestkitchen.com'
   }
 
-  extractors = {
+  protected override readonly extractors = {
     image: this.image.bind(this),
     ingredients: this.ingredients.bind(this),
     instructions: this.instructions.bind(this),
     siteName: this.siteName.bind(this),
-  }
+  } satisfies ScraperExtractors
 
   protected siteName(): RecipeFields['siteName'] {
     return "America's Test Kitchen"

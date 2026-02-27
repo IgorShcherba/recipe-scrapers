@@ -13,8 +13,6 @@ class DummyScraper extends AbstractScraper {
   static host(): string {
     return 'dummy.com'
   }
-  // no site-specific extractors
-  extractors = {}
 }
 
 describe('AbstractScraper utility methods', () => {
@@ -109,8 +107,6 @@ class TestScraper extends AbstractScraper {
     return 'host.test'
   }
 
-  // Provide no real HTML parsing
-  extractors = {}
   private data: Partial<Record<keyof RecipeFields, unknown>>
   constructor(
     data: Partial<Record<keyof RecipeFields, unknown>>,

@@ -6,8 +6,6 @@ export class GenericScraper extends AbstractScraper {
     return '*'
   }
 
-  extractors = {}
-
   protected override getHost(): string {
     try {
       return getHostName(this.url)
