@@ -409,7 +409,6 @@ export class SchemaOrgPlugin extends ExtractorPlugin {
 
   public author(): RecipeFields['author'] {
     let author = this.recipe.author
-    let authorName: string | undefined
 
     if (Array.isArray(author) && author.length > 0) {
       author = author[0]
@@ -420,11 +419,9 @@ export class SchemaOrgPlugin extends ExtractorPlugin {
       if (key && this.people[key]) {
         author = this.people[key]
       }
-
-      authorName = author.name?.toString()
     }
 
-    authorName = normalizeString(authorName)
+    const authorName = this.getSchemaTextValue(author, ['name'])
 
     if (!authorName) {
       throw new SchemaOrgException('author')

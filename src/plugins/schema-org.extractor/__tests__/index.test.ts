@@ -17,6 +17,7 @@ const minimalJsonLd = `
     {
       "@type": "Recipe",
       "name": "RecipeName",
+      "author": "RecipeAuthor",
       "description": "Desc",
       "image": "https://img.jpg",
       "recipeIngredient": [" a ", "b"],
@@ -67,6 +68,7 @@ describe('SchemaOrgPlugin', () => {
   it('extracts simple string fields', () => {
     expect(plugin.extract('siteName')).toBe('MySite')
     expect(plugin.extract('title')).toBe('RecipeName')
+    expect(plugin.extract('author')).toBe('RecipeAuthor')
     expect(plugin.extract('description')).toBe('Desc')
     expect(plugin.extract('cookingMethod')).toBe('Bake')
   })
