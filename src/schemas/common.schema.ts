@@ -6,15 +6,15 @@ const MAX_STRING_LENGTH = 5000
  * Helper to create a required, non-empty string field
  * Note: Returns the base ZodString so additional methods can be chained
  */
-export const zString = (fieldName: string, { min = 1, max = 0 } = {}) =>
-  z
+export const zString = (fieldName: string, { min = 1, max = 0 } = {}) => {
+  const maxLength = max > 0 ? max : MAX_STRING_LENGTH
+
+  return z
     .string(`${fieldName} must be a string`)
     .min(min, `${fieldName} cannot be empty`)
-    .max(
-      max > 0 ? max : MAX_STRING_LENGTH,
-      `${fieldName} must be less than ${max} characters`,
-    )
+    .max(maxLength, `${fieldName} must be less than ${maxLength} characters`)
     .transform((s) => s.trim())
+}
 
 /**
  * Helper to create a URL string field
