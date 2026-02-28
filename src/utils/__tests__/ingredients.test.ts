@@ -497,4 +497,30 @@ describe('groupIngredients', () => {
     expect(getGroupValues(result, null)).toEqual(['ingredient 1'])
     expect(getGroupValues(result, 'Heading')).toEqual(['ingredient 2'])
   })
+
+  it('should keep grouped output when duplicate ingredient text appears in multiple groups', () => {
+    const html = `
+      <div>
+        <h4 class="wprm-recipe-group-name">Sauce</h4>
+        <div class="wprm-recipe-ingredient">2 eggs</div>
+        <h4 class="wprm-recipe-group-name">Topping</h4>
+        <div class="wprm-recipe-ingredient">2 eggs</div>
+      </div>
+    `
+
+    const $ = cheerio.load(html)
+    const ingredientsList = ['2 eggs', '2 eggs']
+    const result = groupIngredients($, ingredientsList)
+
+    expect(result).toEqual([
+      {
+        items: [{ value: '2 eggs' }],
+        name: 'Sauce',
+      },
+      {
+        items: [{ value: '2 eggs' }],
+        name: 'Topping',
+      },
+    ])
+  })
 })

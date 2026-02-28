@@ -192,17 +192,24 @@ export function groupIngredients(
 
   const [groupNameSelector, ingredientSelector] = selectors
 
-  const foundIngredients = new Set(
-    $(ingredientSelector)
-      .toArray()
-      .map((el) => $(el).text().trim())
-      .filter(Boolean),
+  const foundIngredients = $(ingredientSelector)
+    .toArray()
+    .map((el) => normalizeString($(el).text()))
+    .filter((text) => text.length > 0)
+
+  const uniqueFoundIngredients = new Set(foundIngredients)
+  const uniqueIngredientValues = new Set(
+    ingredientValues.map((value) => normalizeString(value)),
   )
 
-  // If HTML ingredient count doesn't match expected, fall back to ungrouped
-  // This handles cases like JS-rendered pages where not all content is in the
-  // raw HTML
-  if (foundIngredients.size !== ingredientValues.length) {
+  // Fall back only when HTML under-covers ingredientValues:
+  // - fewer total non-empty entries, or
+  // - fewer unique normalized entries
+  // Extra HTML entries are allowed (some sites duplicate DOM nodes for layout)
+  if (
+    foundIngredients.length < ingredientValues.length ||
+    uniqueFoundIngredients.size < uniqueIngredientValues.size
+  ) {
     return stringsToIngredients(ingredientValues)
   }
 
