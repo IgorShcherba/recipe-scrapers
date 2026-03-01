@@ -5,6 +5,7 @@ import {
 } from './constants'
 import {
   ExtractionFailedException,
+  ExtractionRuntimeException,
   ExtractorNotFoundException,
 } from './exceptions'
 import { Logger, type LogLevel } from './logger'
@@ -60,7 +61,11 @@ export class RecipeExtractor {
           if (err instanceof ExtractionFailedException) {
             pluginLogger.verbose(err.message)
           } else {
-            pluginLogger.error(err)
+            throw new ExtractionRuntimeException(
+              field,
+              `plugin "${plugin.name}"`,
+              err,
+            )
           }
         }
       } else {
@@ -77,7 +82,15 @@ export class RecipeExtractor {
         result = await extractor(result)
         this.logger.verbose(`Site result for ${field}: `, result)
       } catch (err) {
-        this.logger.error(err)
+        if (err instanceof ExtractionFailedException) {
+          this.logger.verbose(err.message)
+        } else {
+          throw new ExtractionRuntimeException(
+            field,
+            'site-specific extractor',
+            err,
+          )
+        }
       }
     }
 

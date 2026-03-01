@@ -48,3 +48,25 @@ export function getHostName(value: string) {
     throw new Error(`Invalid URL: ${value}`)
   }
 }
+
+/**
+ * Resolves an error message from various error types.
+ */
+export function resolveErrorMessage(
+  error: unknown,
+  defaultMessage = 'Unknown error',
+): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (isObjectLike(error) && 'message' in error && isString(error.message)) {
+    return error.message
+  }
+
+  if (isString(error)) {
+    return error
+  }
+
+  return defaultMessage
+}

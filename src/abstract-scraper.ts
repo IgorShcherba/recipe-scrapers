@@ -23,7 +23,7 @@ import type {
   RecipeObject,
 } from './types/recipe.interface'
 import type { ScraperOptions } from './types/scraper.interface'
-import { isPlainObject } from './utils'
+import { isPlainObject, resolveErrorMessage } from './utils'
 
 export type RecipeFieldExtractor<Key extends keyof RecipeFields> = (
   prevValue: RecipeFields[Key] | undefined,
@@ -292,7 +292,11 @@ export abstract class AbstractScraper {
    * @throws {ValidationException} If validation fails
    */
   async parse(): Promise<RecipeObject> {
-    const result = await this.safeParse()
+    const raw = await this.toRecipeObject()
+    const result = await safeParseWithStandardSchema(
+      this.getValidationSchema(),
+      raw,
+    )
 
     if (!result.success) {
       throw new ValidationException(result.error.issues, result.error.cause)
@@ -308,7 +312,19 @@ export abstract class AbstractScraper {
    * @returns Result object with either data or error
    */
   async safeParse(): Promise<SafeParseResult<RecipeObject>> {
-    const raw = await this.toRecipeObject()
-    return safeParseWithStandardSchema(this.getValidationSchema(), raw)
+    try {
+      const raw = await this.toRecipeObject()
+      return safeParseWithStandardSchema(this.getValidationSchema(), raw)
+    } catch (error) {
+      const message = resolveErrorMessage(error, 'Recipe extraction failed')
+
+      return {
+        success: false,
+        error: {
+          issues: [{ message }],
+          cause: error,
+        },
+      }
+    }
   }
 }

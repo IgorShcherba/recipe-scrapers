@@ -135,6 +135,18 @@ class TestScraper extends AbstractScraper {
   }
 }
 
+class ThrowingScraper extends AbstractScraper {
+  static host(): string {
+    return 'throw.test'
+  }
+
+  override async extract<Key extends keyof RecipeFields>(
+    _field: Key,
+  ): Promise<RecipeFields[Key]> {
+    throw new Error('Extraction exploded')
+  }
+}
+
 describe('AbstractScraper.toRecipeObject', () => {
   const createMockValues = (): Partial<
     Record<keyof RecipeFields, unknown>
@@ -247,6 +259,22 @@ describe('AbstractScraper.toRecipeObject', () => {
     })
 
     expect(scraper.parse()).rejects.toThrow(ValidationException)
+  })
+
+  it('returns a failed safeParse result when extraction fails', async () => {
+    const scraper = new ThrowingScraper('', 'https://throw.test')
+    const result = await scraper.safeParse()
+
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe('Extraction exploded')
+      expect(result.error.cause).toBeInstanceOf(Error)
+    }
+  })
+
+  it('parse() still throws extraction errors before validation', () => {
+    const scraper = new ThrowingScraper('', 'https://throw.test')
+    expect(scraper.parse()).rejects.toThrow('Extraction exploded')
   })
 
   it('uses schema when provided in options', async () => {

@@ -1,7 +1,11 @@
 import { describe, expect, it, spyOn } from 'bun:test'
 import { load } from 'cheerio'
 import type { ExtractorPlugin } from '../abstract-extractor-plugin'
-import { ExtractorNotFoundException } from '../exceptions'
+import {
+  ExtractionFailedException,
+  ExtractionRuntimeException,
+  ExtractorNotFoundException,
+} from '../exceptions'
 import { RecipeExtractor } from '../recipe-extractor'
 import type { RecipeFields } from '../types/recipe.interface'
 
@@ -98,6 +102,70 @@ describe('RecipeExtractor', () => {
     )
     await expect(extractor.extract('title')).rejects.toThrow(
       'No extractor found for field: title',
+    )
+  })
+
+  it('continues to lower-priority plugins for recoverable extraction failures', async () => {
+    const high = {
+      name: 'High',
+      priority: 100,
+      $: load('<html><body></body></html>'),
+      supports: () => true,
+      extract: () => {
+        throw new ExtractionFailedException('title')
+      },
+    } as ExtractorPlugin
+
+    const low = {
+      name: 'Low',
+      priority: 1,
+      $: load('<html><body></body></html>'),
+      supports: () => true,
+      extract: () => 'Recovered title',
+    } as ExtractorPlugin
+
+    const extractor = new RecipeExtractor([low, high], scraperName)
+    const result = await extractor.extract('title')
+
+    expect(result).toBe('Recovered title')
+  })
+
+  it('throws ExtractionRuntimeException for unexpected plugin errors', () => {
+    const plugin = {
+      name: 'SchemaOrgPlugin',
+      priority: 100,
+      $: load('<html><body></body></html>'),
+      supports: (field: keyof RecipeFields) => field === 'totalTime',
+      extract: () => {
+        throw new RangeError('invalid duration: 35 minutes')
+      },
+    } as ExtractorPlugin
+
+    const extractor = new RecipeExtractor([plugin], scraperName)
+
+    expect(extractor.extract('totalTime')).rejects.toThrow(
+      ExtractionRuntimeException,
+    )
+    expect(extractor.extract('totalTime')).rejects.toThrow(
+      'Unexpected extraction error for field "totalTime" from plugin "SchemaOrgPlugin": invalid duration: 35 minutes',
+    )
+  })
+
+  it('throws ExtractionRuntimeException for unexpected site-specific errors', () => {
+    const extractor = new RecipeExtractor([], scraperName)
+
+    expect(
+      extractor.extract('title', () => {
+        throw new TypeError('bad selector')
+      }),
+    ).rejects.toThrow(ExtractionRuntimeException)
+
+    expect(
+      extractor.extract('title', () => {
+        throw new TypeError('bad selector')
+      }),
+    ).rejects.toThrow(
+      'Unexpected extraction error for field "title" from site-specific extractor: bad selector',
     )
   })
 

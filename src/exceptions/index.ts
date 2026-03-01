@@ -1,5 +1,5 @@
 import type { ValidationIssue } from '@/schema-adapter'
-import { isDefined } from '@/utils'
+import { isDefined, resolveErrorMessage } from '@/utils'
 
 export class ExtractorNotFoundException extends Error {
   constructor(field: string) {
@@ -30,6 +30,24 @@ export class ExtractionFailedException extends Error {
 
     super(msg)
     this.name = 'ExtractionFailedException'
+  }
+}
+
+export class ExtractionRuntimeException extends Error {
+  constructor(
+    public readonly field: string,
+    public readonly source: string,
+    public readonly extractionCause?: unknown,
+  ) {
+    const causeMessage = resolveErrorMessage(
+      extractionCause,
+      'Unknown extraction error',
+    )
+
+    super(
+      `Unexpected extraction error for field "${field}" from ${source}: ${causeMessage}`,
+    )
+    this.name = 'ExtractionRuntimeException'
   }
 }
 
